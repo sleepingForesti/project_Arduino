@@ -1,0 +1,176 @@
+#include <Wire.h> // Library for I2C communication
+#include <SPI.h>  // not used here, but needed to prevent a RTClib compile error
+#include "RTClib.h"
+#include <LiquidCrystal_I2C.h> // Library for LCD
+#include <SoftwareSerial.h>
+#include <TridentTD_LineNotify.h>
+#include <ESP8266WiFi.h>
+//-----------------------------------------------------------------------------------------------------------
+#define SSID        "Marshmallow_2.4G"      // บรรทัดที่ 11 ให้ใส่ ชื่อ Wifi ที่จะเชื่อมต่อ
+#define PASSWORD    "12345677"     // บรรทัดที่ 12 ใส่ รหัส Wifi
+#define LINE_TOKEN  "DyHR1uBWqyXno2OoK0lkFc7dMbfJWIrWr1Y62aNmSVo"
+//-----------------------------------------------------------------------------------------------------------
+SoftwareSerial NodeSerial(D3, D4); // RX | TX
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27, 16, 2);
+ 
+RTC_DS1307 RTC;     // Setup an instance of DS1307 naming it RTC
+ 
+ int i_data = 0;
+ int f_data;
+ String LineText;
+ String string1;
+ String string2;
+ int car;
+ int t=0;;
+void setup () 
+{
+  //----------รับข้อมูล uno R3-----------------------------------------------------------------------------------------------------------
+ 
+  pinMode(D3, INPUT);
+  pinMode(D4, OUTPUT);
+  NodeSerial.begin(57600);
+  
+  //--------------แสดงเวลา--------------------------------------------------------------------------------------------------------
+  
+  Serial.begin(57600); // Set serial port speed////////มีแล้ว//////////////////////////////////////
+  lcd.begin();
+  Wire.begin(); // Start the I2C
+  RTC.begin();  // Init RTC
+  RTC.adjust(DateTime(__DATE__, __TIME__));  // Time and date is expanded to date and time on your computer at compiletime
+  lcd.setCursor(6, 0);
+  lcd.print("Wait");
+  delay(3000);
+  lcd.clear();
+  
+  //---------------ส่งไลน์------------------------------------------------------------------------------------------------------------
+  Serial.println();
+  Serial.println(LINE.getVersion());
+
+  WiFi.begin(SSID, PASSWORD);
+  Serial.printf("WiFi connecting to %s\n",  SSID);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(400);
+  }
+  
+  Serial.printf("\nWiFi connected\nIP : ");
+  Serial.println(WiFi.localIP());
+  LINE.setToken(LINE_TOKEN);
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi connected");
+  delay(5000);
+  lcd.clear();
+  //LINE.notify("สวัสดีครับ");// test/////////////////////////
+
+}
+ 
+void loop () {
+//เวลาออกจอ------------------------------------------------------------------------------------------
+  DateTime now = RTC.now();
+ 
+  lcd.setCursor(12, 0);
+  lcd.print(now.hour(), DEC);
+  lcd.print(":");
+  lcd.print(now.minute(), DEC);
+  delay(1000);
+  lcd.clear();
+//
+//-----------uno r3------------------------------------------------------------------------------------------------------------
+while (NodeSerial.available() > 0)
+  {
+    i_data = NodeSerial.parseInt();
+    f_data = NodeSerial.parseFloat();
+    if (NodeSerial.read() == '\n')
+    {
+      Serial.print("NodeMCU or ESP8266");
+      Serial.print(" : ");
+      Serial.print(i_data); Serial.print(" : ");
+      Serial.println(f_data);
+      delay(100);
+    }
+  }
+if(i_data>0&&i_data<6&&f_data!=3){
+lcd.setCursor(0, 0);
+lcd.print("car");
+lcd.setCursor(1, 1);
+lcd.print(i_data);
+car = i_data;
+}
+else{
+  lcd.clear();
+}
+if(f_data==3){
+lcd.clear();
+lcd.setCursor(4, 1);
+lcd.print("confirm");
+String string3 = "เรืองศักดิ์ กระอ่อน ";
+String string2 = " รถคันที่ ";
+LineText = string3 + string1 + string2 + car;
+LINE.notify(LineText);
+delay(11000);
+}
+
+
+if(f_data==1){
+lcd.clear();
+lcd.setCursor(5, 1);
+lcd.print("Access");
+delay(3000);
+f_data = 0;
+lcd.clear();
+}
+else{
+  
+}
+if(f_data==2){
+lcd.clear();
+lcd.setCursor(5, 1);
+lcd.print("Denied");
+delay(3000);
+f_data = 0;
+lcd.clear();
+}
+else{
+  
+}
+
+if(f_data==4){
+lcd.clear();
+lcd.setCursor(5, 1);
+lcd.print("without");
+delay(3000);
+f_data = 0;
+lcd.clear();
+}
+else{
+  
+}
+if(f_data==5){
+lcd.clear();
+lcd.setCursor(5, 1);
+lcd.print("borrow");
+delay(3000);
+f_data = 0;
+lcd.clear();
+string1 = "ยืม";
+
+
+}
+
+
+if(f_data==6){
+lcd.clear();
+lcd.setCursor(5, 1);
+lcd.print("return");
+delay(3000);
+f_data = 0;
+lcd.clear();
+string1 = "คืน";
+}
+else{
+  
+}
+//if(i_data = 0){
+  t=0;
+//}
+}

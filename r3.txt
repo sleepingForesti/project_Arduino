@@ -1,0 +1,514 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <Servo.h>
+Servo myservo;
+
+int i_data = 0;
+int f_data = 0;
+#include <SoftwareSerial.h>
+SoftwareSerial UnoSerial(8, 2); // RX | TX
+
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+bool accessGranted = false;
+bool keySelected = false;
+int bow = 0;
+int keyIndex = 1;
+bool keySelectionConfirmed = false;
+int workst = 0;
+int access = 0;
+int workse = 0;
+const int buttonPin1 = 4;
+const int buttonPin2 = 5;
+const int buttonPin3 = 6;
+const int buttonPin4 = 7;
+bool returnkey1 = false; //false = มีอยู่ true = ยืมไปแล้ว
+bool returnkey2 = false;
+bool returnkey3 = false;
+bool returnkey4 = false;
+bool returnkey5 = false;
+
+
+void setup() {
+  pinMode(8, INPUT);
+  pinMode(2, OUTPUT);
+  Serial.begin(9600);
+  UnoSerial.begin(57600);
+  
+  Serial.begin(9600);
+  SPI.begin();
+  mfrc522.PCD_Init();
+
+  pinMode(buttonPin1, INPUT_PULLUP);
+  pinMode(buttonPin2, INPUT_PULLUP);
+  pinMode(buttonPin3, INPUT_PULLUP);
+  pinMode(buttonPin4, INPUT_PULLUP);
+  
+  myservo.attach(3);
+  myservo.write(0);
+
+  
+  
+}
+
+void loop() {
+
+  
+ int buttonst = 0;
+ int button1Pressed = checkButton(buttonPin1, "Button 1");
+  int button2Pressed = checkButton(buttonPin2, "Button 2");
+
+  if (button1Pressed == 1) {
+    buttonst = 1;
+  }
+  if (button2Pressed == 1) {
+    buttonst = 2;
+  }
+
+  // เช็คว่ามีการตรวจจับการ์ด RFID หรือไม่
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    // อ่านหมายเลขของการ์ด RFID
+    String cardNumber = "";
+    for (byte i = 0; i < mfrc522.uid.size; i++) {
+      cardNumber += String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : "");
+      cardNumber += String(mfrc522.uid.uidByte[i], HEX);
+    }
+    mfrc522.PICC_HaltA(); // หยุดการสื่อสารกับการ์ด RFID
+    Serial.println("Card Number: " + cardNumber);
+    // ตรวจสอบหมายเลขการ์ด RFID ว่าตรงกับเงื่อนไขหรือไม่
+    if (cardNumber == "7353c52e") {
+      accessGranted = true;
+      Serial.println("Access granted!");
+      f_data = 1;
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+    
+    } else {
+      accessGranted = false;
+      Serial.println("Access denied!");
+      f_data = 2;
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+     
+    }
+  }
+    
+    if (buttonst == 1 && accessGranted == true) {
+        workst = 1;
+        Serial.println("work");
+        Serial.println(workst);
+        f_data = 5;
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+      } 
+    else if (buttonst == 2 && accessGranted == true){
+      workst = 2;
+        Serial.println("work");
+        Serial.println(workst);
+        f_data = 6;
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+    }
+      else {
+        workst = 0;
+        Serial.println("work");
+        Serial.println(workst);
+        
+      }
+//--------------------------------------------------------------------------------------------------------------------------------     
+      while (workst == 1) {
+    workse = 1;
+while (workse == 1) {
+    Serial.println(keyIndex);
+    
+    int button3Pressed = checkButton(buttonPin3, "Button 3");
+    
+    
+    if (button3Pressed == 1) {
+    buttonst = 3;
+    }
+    if (button3Pressed != 1) {
+    buttonst = 0;
+  }
+
+  
+    
+    if (buttonst == 3){
+      keyIndex ++;
+    
+      if(keyIndex >= 6){
+        keyIndex = 1;
+      }
+     
+     i_data = keyIndex;
+    f_data = 0;
+    UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+    }
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+int button4Pressed = checkButton(buttonPin4, "Button 4");
+    if (button4Pressed == 1) {
+      
+    buttonst = 4;
+        switch (keyIndex) {
+    case 1:
+      if(returnkey1 == false){
+         f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(45);
+      delay(10000);
+      returnkey1 = true;
+     
+      }
+      else{
+        f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 2:
+      if(returnkey2 == false){
+        f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(90);
+      delay(10000);
+      returnkey2 = true;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 3:
+    if(returnkey3 == false){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(135);
+      delay(10000);
+      returnkey3 = true;
+      
+            }
+      else{
+        f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 4:
+    if(returnkey4 == false){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(180);
+      delay(10000);
+      returnkey4 = true;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 5:
+    if(returnkey5 == false){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(180);
+      delay(10000);
+      returnkey5 = true;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+
+  }
+     
+    myservo.write(0);
+    workse = 0; 
+    
+    
+    
+    }
+    
+
+  
+
+
+    
+    
+    
+    
+    
+    
+ 
+}
+accessGranted = false;
+f_data = 0;
+workst = 0;
+keyIndex = 1;
+i_data = 0;
+UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+} 
+
+//---------------------------------------------------------------------------------
+while (workst == 2) {
+    workse = 1;
+while (workse == 1) {
+    Serial.println(keyIndex);
+    
+    
+    int button3Pressed = checkButton(buttonPin3, "Button 3");
+    
+    
+    if (button3Pressed == 1) {
+    buttonst = 3;
+    }
+    if (button3Pressed != 1) {
+    buttonst = 0;
+  }
+
+  
+    
+    if (buttonst == 3){
+      keyIndex ++;
+    
+      if(keyIndex >= 6){
+        keyIndex = 1;
+      }
+     
+      i_data = keyIndex;
+    f_data = 0;
+    UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+    }
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+int button4Pressed = checkButton(buttonPin4, "Button 4");
+    if (button4Pressed == 1) {
+      
+    buttonst = 4;
+        switch (keyIndex) {
+    case 1:
+      if(returnkey1 == true){
+        f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(45);
+      delay(10000);
+      returnkey1 = false;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 2:
+    if(returnkey2 == true){
+       f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(90);
+      delay(10000);
+      returnkey2 = false;
+     
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+    case 3:
+    if(returnkey3 == true){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(135);
+      delay(10000);
+      break;
+      returnkey3 = false;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+    case 4:
+    if(returnkey4 == true){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(190);
+      delay(10000);
+      break;
+      returnkey4 = false;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+    case 5:
+    if(returnkey5 == true){
+      f_data = 3; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+      myservo.write(180);
+      delay(10000);
+      returnkey5 = false;
+      
+            }
+      else{
+          f_data = 4; //แสดงยืนยัน
+      UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+  delay(2000);
+        workse = 0; 
+      }
+      break;
+
+  }
+     
+    myservo.write(0);
+    workse = 0; 
+    
+    
+    
+    }
+    
+
+  
+
+
+    
+    
+    
+    
+    
+    
+ 
+}
+accessGranted = false;
+f_data = 0;
+workst = 0;
+keyIndex = 1;
+i_data = 0;
+UnoSerial.print(i_data);
+  UnoSerial.print(" ");
+  UnoSerial.print(f_data);
+  UnoSerial.print("\n");
+}
+
+           
+
+
+}
+
+int checkButton(int buttonPin, const char* buttonName) {
+  int buttonState = digitalRead(buttonPin);
+  if (buttonState == LOW) {
+    delay(200);
+    return 1; // ส่งค่ากลับเป็น 1 เมื่อปุ่มถูกกด
+  }
+  return 0; // ส่งค่ากลับเป็น 0 เมื่อปุ่มไม่ถูกกด
+}
+
+  
